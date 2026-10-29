@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "semantic-rag-conversational-memory"
+version = "1.0.0"
+description = "Hybrid conversational memory combining pgvector similarity with recency fallback."
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [
+  { name = "Adeel Ejaz" }
+]
+license = { text = "MIT" }
+keywords = ["rag", "llm", "conversational-ai", "pgvector", "fastapi", "ollama", "memory-engine"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["."]
