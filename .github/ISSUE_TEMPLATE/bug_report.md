@@ -24,3 +24,4 @@ A clear and concise description of what you expected to happen.
  - Python Version: [e.g. 3.11, 3.12, 3.13]
  - PostgreSQL / pgvector version:
  - Ollama Model versions:
+

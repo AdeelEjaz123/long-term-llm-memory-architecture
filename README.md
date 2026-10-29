@@ -120,7 +120,16 @@ ollama pull llama3.2:latest
 ollama pull nomic-embed-text:latest
 ```
 
-### 2. Start PostgreSQL with pgvector
+### 2. One-Click Launch (Windows)
+You can start the entire stack (Docker container + FastAPI server + Web GUI) with a single click:
+* **Start:** Double-click [`start.bat`](start.bat) *(Starts PostgreSQL, launches the server, and opens the console in your browser)*
+* **Stop:** Double-click [`stop.bat`](stop.bat) *(Stops the API server and halts the Docker container)*
+
+---
+
+### 3. Manual Step-by-Step Setup
+
+#### A. Start PostgreSQL with pgvector
 ```bash
 docker compose up -d
 ```

@@ -40,3 +40,4 @@ jobs:
         python -c "from app.models.schemas import ChatRequest, ChatResponse; print('Schemas OK')"
         python -c "from app.config import settings; print('Config OK')"
         python -c "from app.services.prompt_templates import build_query_resolution_prompt; print('Prompts OK')"
+
