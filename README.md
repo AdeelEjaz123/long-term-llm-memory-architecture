@@ -11,7 +11,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Docker](https://img.shields.io/badge/Docker-compose%20ready-2496ED.svg?logo=docker&logoColor=white)](https://www.docker.com/)
 
-[Key Features](#-key-features) • [Architecture](#-system-architecture) • [Quick Start](#-quick-start) • [Interactive GUI](#-interactive-developer-gui) • [API Specification](#-api-specification) • [Contributing](#-contributing)
+[Key Features](#-key-features) • [Architecture (Detailed Doc)](ARCHITECTURE.md) • [Quick Start](#-quick-start) • [Interactive GUI](#-interactive-developer-gui) • [API Specification](#-api-specification) • [Contributing](#-contributing)
 
 </div>
 
@@ -292,6 +292,7 @@ This verifies:
 ├── test_e2e_pipeline.py         # HTTP integration test suite
 ├── Makefile                     # Developer automation commands
 ├── CONTRIBUTING.md              # Open source contribution guide
+├── ARCHITECTURE.md              # In-depth architectural & pipeline guide
 ├── LICENSE                      # MIT License
 └── README.md                    # Project documentation
 ```
