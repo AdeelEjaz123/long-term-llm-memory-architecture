@@ -11,7 +11,7 @@ cd /d "%~dp0"
 echo [*] Checking Docker status...
 docker info >nul 2>&1
 if %errorlevel% neq 0 (
-    echo [ERROR] Docker is not running. Please start Docker Desktop and try again.
+    echo [ERROR] Docker Desktop is not running. Please start Docker and try again.
     echo.
     pause
     exit /b 1
@@ -27,7 +27,10 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
-:: 3. Check / Activate Virtual Environment
+:: 3. Clean up port 8000 if previously occupied
+powershell -NoProfile -Command "Get-NetTCPConnection -LocalPort 8000 -State Listen -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }"
+
+:: 4. Check / Activate Virtual Environment
 if not exist ".venv\Scripts\activate.bat" (
     echo [*] Virtual environment not found. Initializing .venv...
     python -m venv .venv
@@ -38,13 +41,13 @@ if not exist ".venv\Scripts\activate.bat" (
     call .venv\Scripts\activate.bat
 )
 
-:: 4. Launch browser after 2 seconds in background
+:: 5. Launch browser after 2 seconds
 echo.
 echo [*] Database running on port 5432
 echo [*] Launching API server on http://localhost:8000
 echo [*] Opening Web Console in default browser...
 echo.
-start "" cmd /c "timeout /t 2 /nobreak >nul & start http://localhost:8000"
+start "" powershell -NoProfile -Command "Start-Sleep -Seconds 2; Start-Process 'http://localhost:8000'"
 
-:: 5. Run Uvicorn
+:: 6. Run Uvicorn
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload

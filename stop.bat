@@ -7,21 +7,29 @@ echo.
 
 cd /d "%~dp0"
 
-:: 1. Stop any server process listening on port 8000
-echo [*] Stopping API server running on port 8000...
-for /f "tokens=5" %%a in ('netstat -aon ^| findstr :8000 ^| findstr LISTENING 2^>nul') do (
-    echo [*] Stopping process (PID: %%a)...
-    taskkill /F /PID %%a >nul 2>&1
-)
+:: 1. Force kill processes running uvicorn or listening on port 8000
+echo [*] Terminating API server on port 8000...
+powershell -NoProfile -Command "Get-NetTCPConnection -LocalPort 8000 -State Listen -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }"
+powershell -NoProfile -Command "Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -like '*app.main:app*' -or $_.CommandLine -like '*uvicorn*app.main*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }"
 
-:: 2. Stop PostgreSQL pgvector container
-echo [*] Stopping PostgreSQL Docker container...
+:: 2. Terminate uvicorn / console windows if still open
+taskkill /F /FI "WINDOWTITLE eq Semantic RAG Memory Engine - Startup*" /T >nul 2>&1
+taskkill /F /IM uvicorn.exe /T >nul 2>&1
+
+:: 3. Stop PostgreSQL Docker container
+echo [*] Stopping PostgreSQL pgvector container...
+docker stop semantic_rag_postgres >nul 2>&1
 docker compose stop >nul 2>&1
-echo [*] Database container stopped.
+
+:: 4. Verify status
+echo.
+powershell -NoProfile -Command "$listen = Get-NetTCPConnection -LocalPort 8000 -State Listen -ErrorAction SilentlyContinue; if ($listen) { Write-Host ' [!] Port 8000 is still active.' -ForegroundColor Yellow } else { Write-Host ' [OK] API server successfully stopped.' -ForegroundColor Green }"
+powershell -NoProfile -Command "$running = docker ps -q --filter 'name=semantic_rag_postgres'; if ($running) { Write-Host ' [!] Database container still running.' -ForegroundColor Yellow } else { Write-Host ' [OK] Database container stopped.' -ForegroundColor Green }"
 
 echo.
 echo ============================================================
 echo   System stopped successfully.
 echo ============================================================
-timeout /t 2 >nul
+echo.
+powershell -NoProfile -Command "Start-Sleep -Seconds 2"
 exit /b 0
