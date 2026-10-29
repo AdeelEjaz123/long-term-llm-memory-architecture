@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-neutral-100 text-neutral-900">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Conversational Memory Engine — Console</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Inter"', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            royal: {
+              50: '#eff6ff',
+              100: '#dbeafe',
+              200: '#bfdbfe',
+              300: '#93c5fd',
+              500: '#3b82f6',
+              600: '#2563eb', // Royal Blue
+              700: '#1d4ed8',
+              800: '#1e40af',
+              900: '#1e3a8a',
+              950: '#0a1738',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-feature-settings: "cv02", "cv03", "cv04", "cv11"; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+  </style>
+</head>
+<body class="h-full flex flex-col font-sans antialiased text-neutral-900 bg-white select-none">
+
+  <!-- Solid Black Executive Navbar -->
+  <header class="h-14 border-b border-black bg-black px-6 flex items-center justify-between shrink-0 text-white z-10">
+    <div class="flex items-center gap-3">
+      <div class="w-7 h-7 rounded bg-royal-600 flex items-center justify-center text-white font-bold shadow-sm">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+        </svg>
+      </div>
+      <div class="flex items-center gap-2.5">
+        <span class="text-sm font-semibold tracking-tight text-white">Conversational Memory Engine</span>
+        <span class="text-[10px] font-mono tracking-wide font-medium bg-neutral-900 text-royal-400 border border-neutral-800 px-2 py-0.5 rounded">
+          pgvector &bull; Ollama
+        </span>
+      </div>
+    </div>
+
+    <!-- Right Controls: Status & Session -->
+    <div class="flex items-center gap-4 text-xs font-mono">
+      <div id="healthBadge" class="flex items-center gap-2 bg-neutral-900 border border-neutral-800 px-3 py-1 rounded text-neutral-300">
+        <span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
+        <span id="healthText">Connecting...</span>
+      </div>
+
+      <div class="h-4 w-px bg-neutral-800"></div>
+
+      <div class="flex items-center gap-2 bg-neutral-900 border border-neutral-800 rounded px-2.5 py-1">
+        <span class="text-[11px] font-medium text-neutral-400 uppercase tracking-wider font-sans">Session</span>
+        <input id="sessionInput" type="text" class="bg-transparent text-xs font-mono text-royal-300 focus:outline-none w-32 border-b border-transparent focus:border-royal-400 transition" value="">
+        <button onclick="createNewSession()" class="text-xs font-medium text-neutral-200 hover:text-white px-2 py-0.5 rounded border border-neutral-700 hover:border-royal-500 hover:bg-neutral-800 transition font-sans">
+          + New
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Workspace Grid -->
+  <div class="flex-1 grid grid-cols-1 lg:grid-cols-12 overflow-hidden bg-white">
+
+    <!-- Primary Chat Console (White Surface, 7 cols) -->
+    <div class="lg:col-span-7 flex flex-col h-full bg-white border-r border-neutral-200">
+      
+      <!-- Preset Test Scenarios Bar -->
+      <div class="px-5 py-2.5 border-b border-neutral-200 bg-neutral-50 flex items-center gap-2 overflow-x-auto text-xs shrink-0">
+        <span class="text-[11px] font-semibold text-neutral-500 uppercase tracking-wider shrink-0">Test Scenarios:</span>
+        <button onclick="sendScenario(1)" class="whitespace-nowrap px-2.5 py-1 bg-white hover:bg-neutral-100 hover:border-black text-neutral-700 rounded border border-neutral-300 transition font-medium">
+          1. Architecture
+        </button>
+        <button onclick="sendScenario(2)" class="whitespace-nowrap px-2.5 py-1 bg-white hover:bg-neutral-100 hover:border-black text-neutral-700 rounded border border-neutral-300 transition font-medium">
+          2. Security Constraints
+        </button>
+        <button onclick="sendScenario(3)" class="whitespace-nowrap px-2.5 py-1 bg-royal-50 hover:bg-royal-100 text-royal-700 border border-royal-200 rounded transition font-semibold">
+          3. Pronoun Query ("How do I deploy it?")
+        </button>
+        <button onclick="sendScenario(4)" class="whitespace-nowrap px-2.5 py-1 bg-white hover:bg-neutral-100 hover:border-black text-neutral-700 rounded border border-neutral-300 transition font-medium">
+          4. Constraint Override
+        </button>
+        <button onclick="sendScenario(5)" class="whitespace-nowrap px-2.5 py-1 bg-white hover:bg-neutral-100 hover:border-black text-neutral-700 rounded border border-neutral-300 transition font-medium">
+          5. State Verification
+        </button>
+      </div>
+
+      <!-- Dialogue Stream -->
+      <div id="chatMessages" class="flex-1 overflow-y-auto p-6 space-y-5 select-text bg-white">
+        <div class="border border-neutral-200 bg-neutral-50 rounded-lg p-4 text-xs text-neutral-600 space-y-1.5 leading-relaxed shadow-xs">
+          <div class="font-semibold text-black flex items-center gap-2 text-xs">
+            <span class="w-2 h-2 rounded-full bg-royal-600"></span>
+            <span>Production Verification Console</span>
+          </div>
+          <p>Real-time query decontextualization, pgvector cosine search (<code class="font-mono text-royal-700 bg-royal-50 px-1 py-0.5 rounded border border-royal-200">similarity &ge; 0.70</code>), and recency fallback execution.</p>
+        </div>
+      </div>
+
+      <!-- Clean Input Bar -->
+      <div class="p-4 border-t border-neutral-200 bg-white">
+        <form id="chatForm" onsubmit="handleChatSubmit(event)" class="flex gap-2.5">
+          <textarea
+            id="messageInput"
+            rows="2"
+            placeholder="Enter prompt or query..."
+            class="flex-1 bg-neutral-50 border border-neutral-300 rounded-lg px-3.5 py-2.5 text-sm text-neutral-900 placeholder-neutral-400 focus:outline-none focus:bg-white focus:border-royal-600 focus:ring-1 focus:ring-royal-600 resize-none font-sans transition"
+            onkeydown="if(event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); handleChatSubmit(event); }"
+          ></textarea>
+          <button
+            id="sendBtn"
+            type="submit"
+            class="px-5 bg-royal-600 hover:bg-royal-700 text-white font-semibold rounded-lg text-xs tracking-wider uppercase transition disabled:opacity-40 disabled:cursor-not-allowed shrink-0 shadow-sm"
+          >
+            Submit
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Inspector & Database Panel (Light Slate / Off-White Surface, 5 cols) -->
+    <div class="lg:col-span-5 flex flex-col h-full bg-neutral-50 overflow-hidden">
+      
+      <!-- Panel Header / Tabs -->
+      <div class="h-11 border-b border-neutral-200 px-4 flex items-center justify-between shrink-0 bg-white">
+        <div class="flex gap-1.5 text-xs font-medium">
+          <button id="tabPipelineBtn" onclick="switchTab('pipeline')" class="px-3 py-1.5 rounded-md text-white bg-black font-medium transition shadow-xs">
+            Pipeline Inspector
+          </button>
+          <button id="tabMemoryBtn" onclick="switchTab('memory')" class="px-3 py-1.5 rounded-md text-neutral-600 hover:text-black hover:bg-neutral-100 transition font-medium">
+            Vector Store (pgvector)
+          </button>
+        </div>
+        <button onclick="refreshMemoryStore()" title="Reload Memory Records" class="text-neutral-500 hover:text-black p-1.5 rounded hover:bg-neutral-100 transition">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- Tab 1: Pipeline Inspector -->
+      <div id="pipelineTab" class="flex-1 overflow-y-auto p-5 space-y-4 select-text">
+        
+        <!-- Step A: Query Resolution Card -->
+        <div class="border border-neutral-200 bg-white rounded-lg p-4 space-y-3 shadow-xs">
+          <div class="flex items-center justify-between border-b border-neutral-100 pb-2.5">
+            <span class="text-xs font-bold tracking-wide text-black uppercase flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-royal-600"></span>
+              Step A &mdash; Query Resolution
+            </span>
+            <span id="turnNumberBadge" class="text-[10px] font-mono text-neutral-600 bg-neutral-100 border border-neutral-200 px-2 py-0.5 rounded font-semibold">
+              Turn &mdash;
+            </span>
+          </div>
+
+          <div class="space-y-1">
+            <span class="text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">Raw User Input</span>
+            <div id="inspRawQuery" class="text-xs font-mono text-neutral-800 bg-neutral-50 p-2.5 rounded border border-neutral-200">
+              (Awaiting input)
+            </div>
+          </div>
+
+          <div class="space-y-1">
+            <span class="text-[11px] font-semibold text-royal-700 uppercase tracking-wider">Standalone Resolved Query</span>
+            <div id="inspResolvedQuery" class="text-xs font-mono text-royal-900 bg-royal-50 p-2.5 rounded border border-royal-200 font-semibold">
+              &mdash;
+            </div>
+          </div>
+        </div>
+
+        <!-- Steps B & C: Vector Search & Branching Card -->
+        <div class="border border-neutral-200 bg-white rounded-lg p-4 space-y-3 shadow-xs">
+          <div class="flex items-center justify-between border-b border-neutral-100 pb-2.5">
+            <span class="text-xs font-bold tracking-wide text-black uppercase flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-black"></span>
+              Steps B &amp; C &mdash; Vector Retrieval
+            </span>
+            <span id="branchBadge" class="text-xs font-mono font-semibold px-2 py-0.5 rounded border border-neutral-300 bg-neutral-100 text-neutral-800">
+              Idle
+            </span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 text-xs font-mono">
+            <div class="bg-neutral-50 p-3 rounded border border-neutral-200">
+              <span class="text-neutral-500 text-[11px] uppercase block tracking-wider font-sans font-semibold">Cosine Similarity</span>
+              <span id="inspSimilarity" class="text-base font-bold text-royal-700">&mdash;</span>
+              <span class="text-[10px] text-neutral-500 block mt-0.5 font-sans">Threshold: &ge; 0.70</span>
+            </div>
+            <div class="bg-neutral-50 p-3 rounded border border-neutral-200">
+              <span class="text-neutral-500 text-[11px] uppercase block tracking-wider font-sans font-semibold">Retrieved Turns</span>
+              <span id="inspMatchCount" class="text-base font-bold text-black">0</span>
+              <span class="text-[10px] text-neutral-500 block mt-0.5 font-sans">Top-k: 2</span>
+            </div>
+          </div>
+
+          <!-- Retrieved Context Block -->
+          <div class="space-y-1.5">
+            <span class="text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">Retrieved Semantic Units</span>
+            <div id="inspMatchesList" class="space-y-2">
+              <div class="text-xs text-neutral-500 p-3 bg-neutral-50 rounded border border-neutral-200">
+                No vector matches injected. Chronological baseline active.
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Tab 2: PostgreSQL Store Inspector -->
+      <div id="memoryTab" class="flex-1 overflow-y-auto p-5 space-y-3 hidden select-text">
+        <div class="flex items-center justify-between text-xs text-neutral-600 font-mono pb-1 border-b border-neutral-200 font-medium">
+          <span>Table: chat_memory_store</span>
+          <span id="totalTurnsCount" class="text-royal-700 font-semibold">0 records</span>
+        </div>
+        <div id="memoryStoreList" class="space-y-2.5">
+          <div class="text-xs text-neutral-500 p-4 bg-white rounded-lg border border-neutral-200 text-center shadow-xs">
+            No records persisted for this session yet.
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script>
+    // State Management
+    let currentSessionId = "session_" + Math.random().toString(36).substring(2, 9);
+    document.getElementById("sessionInput").value = currentSessionId;
+
+    async function checkHealth() {
+      try {
+        const res = await fetch("/health");
+        const data = await res.json();
+        const badge = document.getElementById("healthBadge");
+        const text = document.getElementById("healthText");
+        if (data.status === "healthy") {
+          badge.className = "flex items-center gap-2 bg-neutral-900 border border-neutral-800 px-3 py-1 rounded text-emerald-400";
+          text.innerText = "System Online";
+        } else {
+          badge.className = "flex items-center gap-2 bg-neutral-900 border border-neutral-800 px-3 py-1 rounded text-amber-400";
+          text.innerText = "Degraded";
+        }
+      } catch (e) {
+        document.getElementById("healthText").innerText = "Offline";
+      }
+    }
+    checkHealth();
+
+    function createNewSession() {
+      currentSessionId = "session_" + Math.random().toString(36).substring(2, 9);
+      document.getElementById("sessionInput").value = currentSessionId;
+      document.getElementById("chatMessages").innerHTML = `
+        <div class="border border-neutral-200 bg-neutral-50 rounded-lg p-4 text-xs text-neutral-600 space-y-1 shadow-xs">
+          <div class="font-bold text-black">New Session Initialized</div>
+          <p class="font-mono text-royal-700 text-[11px]">ID: ${currentSessionId}</p>
+        </div>
+      `;
+      resetInspector();
+      refreshMemoryStore();
+    }
+
+    document.getElementById("sessionInput").addEventListener("change", (e) => {
+      currentSessionId = e.target.value.trim() || currentSessionId;
+      refreshMemoryStore();
+    });
+
+    function switchTab(tab) {
+      const pTab = document.getElementById("pipelineTab");
+      const mTab = document.getElementById("memoryTab");
+      const pBtn = document.getElementById("tabPipelineBtn");
+      const mBtn = document.getElementById("tabMemoryBtn");
+
+      if (tab === 'pipeline') {
+        pTab.classList.remove("hidden");
+        mTab.classList.add("hidden");
+        pBtn.className = "px-3 py-1.5 rounded-md text-white bg-black font-medium transition shadow-xs";
+        mBtn.className = "px-3 py-1.5 rounded-md text-neutral-600 hover:text-black hover:bg-neutral-100 transition font-medium";
+      } else {
+        pTab.classList.add("hidden");
+        mTab.classList.remove("hidden");
+        pBtn.className = "px-3 py-1.5 rounded-md text-neutral-600 hover:text-black hover:bg-neutral-100 transition font-medium";
+        mBtn.className = "px-3 py-1.5 rounded-md text-white bg-black font-medium transition shadow-xs";
+        refreshMemoryStore();
+      }
+    }
+
+    function resetInspector() {
+      document.getElementById("turnNumberBadge").innerText = "Turn —";
+      document.getElementById("inspRawQuery").innerText = "(Awaiting input)";
+      document.getElementById("inspResolvedQuery").innerText = "—";
+      document.getElementById("inspSimilarity").innerText = "—";
+      document.getElementById("inspMatchCount").innerText = "0";
+      document.getElementById("branchBadge").innerText = "Idle";
+      document.getElementById("branchBadge").className = "text-xs font-mono font-semibold px-2 py-0.5 rounded border border-neutral-300 bg-neutral-100 text-neutral-800";
+      document.getElementById("inspMatchesList").innerHTML = `
+        <div class="text-xs text-neutral-500 p-3 bg-neutral-50 rounded border border-neutral-200">
+          No vector matches injected. Chronological baseline active.
+        </div>
+      `;
+    }
+
+    async function handleChatSubmit(e) {
+      if (e) e.preventDefault();
+      const input = document.getElementById("messageInput");
+      const text = input.value.trim();
+      if (!text) return;
+      input.value = "";
+      await sendMessage(text);
+    }
+
+    async function sendMessage(text) {
+      const chatContainer = document.getElementById("chatMessages");
+      const sendBtn = document.getElementById("sendBtn");
+
+      // Append user bubble (Royal blue accent)
+      chatContainer.innerHTML += `
+        <div class="flex justify-end">
+          <div class="bg-royal-600 text-white px-4 py-2.5 rounded-lg text-sm max-w-[85%] leading-relaxed font-sans shadow-xs">
+            ${escapeHtml(text)}
+          </div>
+        </div>
+      `;
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+
+      // Loading indicator
+      const loadingId = "loading_" + Date.now();
+      chatContainer.innerHTML += `
+        <div id="${loadingId}" class="flex justify-start">
+          <div class="bg-neutral-50 border border-neutral-200 text-neutral-600 px-3.5 py-2 rounded-lg text-xs flex items-center gap-2 font-mono shadow-xs">
+            <span class="inline-block w-2 h-2 rounded-full bg-royal-600 animate-pulse"></span>
+            <span>Evaluating memory pipeline...</span>
+          </div>
+        </div>
+      `;
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+      sendBtn.disabled = true;
+
+      try {
+        const response = await fetch("/api/v1/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ session_id: currentSessionId, message: text }),
+        });
+
+        const data = await response.json();
+        document.getElementById(loadingId)?.remove();
+
+        if (response.ok) {
+          // Assistant response bubble (Clean off-white card with crisp black text)
+          chatContainer.innerHTML += `
+            <div class="flex flex-col items-start gap-1 max-w-[92%]">
+              <div class="bg-neutral-50 border border-neutral-200 text-neutral-900 px-4 py-3 rounded-lg text-sm whitespace-pre-wrap leading-relaxed shadow-xs">
+                ${escapeHtml(data.response)}
+              </div>
+              <div class="flex items-center gap-2 px-1 text-[11px] font-mono text-neutral-500 font-medium">
+                <span>Turn #${data.turn_index}</span>
+                <span>&bull;</span>
+                <span class="${getBranchColorClass(data.matched_branch)}">${data.matched_branch}</span>
+                ${data.similarity_score ? `<span>&bull;</span><span class="text-royal-700 font-semibold">Sim: ${(data.similarity_score * 100).toFixed(1)}%</span>` : ''}
+              </div>
+            </div>
+          `;
+          updatePipelineInspector(text, data);
+          setTimeout(refreshMemoryStore, 3000);
+        } else {
+          chatContainer.innerHTML += `
+            <div class="border border-red-200 bg-red-50 text-red-700 px-3 py-2 rounded-lg text-xs font-mono">
+              Error: ${escapeHtml(data.detail || "Execution failed")}
+            </div>
+          `;
+        }
+      } catch (err) {
+        document.getElementById(loadingId)?.remove();
+        chatContainer.innerHTML += `
+          <div class="border border-red-200 bg-red-50 text-red-700 px-3 py-2 rounded-lg text-xs font-mono">
+            Network error: ${escapeHtml(err.message)}
+          </div>
+        `;
+      } finally {
+        sendBtn.disabled = false;
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+      }
+    }
+
+    function updatePipelineInspector(rawInput, data) {
+      document.getElementById("turnNumberBadge").innerText = `Turn #${data.turn_index}`;
+      document.getElementById("inspRawQuery").innerText = rawInput;
+      document.getElementById("inspResolvedQuery").innerText = data.resolved_query;
+
+      // Branch Badge
+      const branchBadge = document.getElementById("branchBadge");
+      branchBadge.innerText = data.matched_branch;
+      branchBadge.className = `text-xs font-mono font-semibold px-2 py-0.5 rounded border ${getBranchBadgeClass(data.matched_branch)}`;
+
+      // Similarity & Counts
+      document.getElementById("inspSimilarity").innerText = data.similarity_score ? data.similarity_score.toFixed(4) : "—";
+      document.getElementById("inspMatchCount").innerText = data.historical_context ? data.historical_context.length : "0";
+
+      const listContainer = document.getElementById("inspMatchesList");
+      if (data.historical_context && data.historical_context.length > 0) {
+        listContainer.innerHTML = data.historical_context.map(m => `
+          <div class="bg-white border border-neutral-200 rounded-lg p-3 text-xs space-y-1.5 shadow-xs">
+            <div class="flex items-center justify-between font-mono">
+              <span class="font-bold text-black">Turn #${m.turn_index}</span>
+              <span class="text-[10px] text-royal-700 bg-royal-50 px-1.5 py-0.5 rounded border border-royal-200 font-semibold">
+                Sim: ${(m.similarity * 100).toFixed(1)}%
+              </span>
+            </div>
+            <div>
+              <span class="text-neutral-500 text-[10px] uppercase font-bold tracking-wider">Prompt Summary</span>
+              <p class="text-neutral-800 mt-0.5">${escapeHtml(m.prompt_summary)}</p>
+            </div>
+            <div>
+              <span class="text-neutral-500 text-[10px] uppercase font-bold tracking-wider">Answer Summary</span>
+              <p class="text-neutral-600 mt-0.5 line-clamp-2">${escapeHtml(m.answer_summary)}</p>
+            </div>
+          </div>
+        `).join("");
+      } else {
+        listContainer.innerHTML = `
+          <div class="text-xs text-neutral-500 p-3 bg-neutral-50 rounded border border-neutral-200">
+            No vector matches &ge; 0.70. Chronological baseline active.
+          </div>
+        `;
+      }
+    }
+
+    async function refreshMemoryStore() {
+      try {
+        const res = await fetch(`/api/v1/memory/${currentSessionId}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        document.getElementById("totalTurnsCount").innerText = `${data.total_turns} records`;
+        const container = document.getElementById("memoryStoreList");
+
+        if (data.turns && data.turns.length > 0) {
+          container.innerHTML = data.turns.map(t => `
+            <div class="bg-white border border-neutral-200 rounded-lg p-3 text-xs space-y-2 hover:border-black transition shadow-xs">
+              <div class="flex items-center justify-between font-mono">
+                <span class="font-bold text-royal-700">Turn #${t.turn_index}</span>
+                <span class="text-[10px] text-neutral-600 bg-neutral-100 px-1.5 py-0.5 rounded border border-neutral-200 font-semibold">
+                  vector(768)
+                </span>
+              </div>
+              <div>
+                <span class="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider block">Prompt Summary</span>
+                <p class="text-neutral-800 mt-0.5 font-medium">${escapeHtml(t.prompt_summary)}</p>
+              </div>
+              <div>
+                <span class="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider block">Answer Summary</span>
+                <p class="text-neutral-600 mt-0.5 line-clamp-2">${escapeHtml(t.answer_summary)}</p>
+              </div>
+              <div class="text-[10px] text-neutral-400 font-mono text-right">
+                ${new Date(t.created_at).toLocaleTimeString()}
+              </div>
+            </div>
+          `).join("");
+        } else {
+          container.innerHTML = `
+            <div class="text-xs text-neutral-500 p-4 bg-white rounded-lg border border-neutral-200 text-center shadow-xs">
+              No records persisted for this session yet.
+            </div>
+          `;
+        }
+      } catch (e) {
+        console.error("Failed to fetch memory store", e);
+      }
+    }
+
+    function sendScenario(num) {
+      const scenarios = {
+        1: "We are designing a FinTech digital banking microservice architecture. It uses PostgreSQL for transactions and Kubernetes for deployment.",
+        2: "For authentication, we decided to use OAuth2 with RS256 signed JWT tokens.",
+        3: "How do I deploy it?",
+        4: "Important change of plans: Ignore Kubernetes completely. We have decided to switch our deployment target exclusively to AWS ECS Fargate.",
+        5: "Where are we deploying our microservice now?"
+      };
+      if (scenarios[num]) {
+        document.getElementById("messageInput").value = scenarios[num];
+        handleChatSubmit();
+      }
+    }
+
+    function getBranchBadgeClass(branch) {
+      if (branch.includes("Branch A")) return "bg-royal-50 border-royal-200 text-royal-700 font-semibold";
+      if (branch.includes("Branch B")) return "bg-neutral-100 border-neutral-300 text-neutral-800 font-semibold";
+      return "bg-neutral-100 border-neutral-200 text-neutral-600";
+    }
+
+    function getBranchColorClass(branch) {
+      if (branch.includes("Branch A")) return "text-royal-700 font-semibold";
+      if (branch.includes("Branch B")) return "text-neutral-800 font-medium";
+      return "text-neutral-500";
+    }
+
+    function escapeHtml(str) {
+      if (!str) return "";
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+  </script>
+</body>
+</html>
